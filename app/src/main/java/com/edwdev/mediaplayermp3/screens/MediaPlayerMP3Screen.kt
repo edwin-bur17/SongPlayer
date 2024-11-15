@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,13 +59,6 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
                     titleContentColor = WhiteColor
                 )
             )
-        },
-        bottomBar = {
-            SongMenuBar(
-                viewModel = viewModel,
-                currentSong = currentSong,
-                songs = songs
-            )
         }
     ) { innerPadding ->
         Column(
@@ -72,8 +66,13 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
                 .fillMaxSize()
                 .padding(innerPadding)
                 .background(VariantPrimaryColor)
-        ) { // Aplica el padding aquí
-            LazyColumn(modifier = Modifier.weight(1f).background(PrimaryColor).padding(horizontal = 16.dp)) {
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(PrimaryColor)
+                    .padding(horizontal = 16.dp)
+            ) {
                 items(songs) { song ->
                     SongItem(song, viewModel.currentSong.value == song) {
                         if (song == viewModel.currentSong.value && viewModel.mediaPlayer?.isPlaying == true) {
@@ -86,67 +85,61 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-fun SongMenuBar(viewModel: MediaPlayerMP3ViewModel, currentSong: Song?, songs: List<Song>) {
-    Row(
-        modifier = Modifier
-            //.padding(horizontal = 16.dp, vertical = 1.dp)
-            // .height(55.dp)
-            .fillMaxWidth()
-            .background(VariantPrimaryColor),
-    ) {
-        Text(
-            text = currentSong?.title ?: "Seleccione una canción",
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(fraction = 0.6f),
-            color = TertiaryColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 1.dp)
+                    .height(55.dp)
+                    .fillMaxWidth()
+                    .background(VariantPrimaryColor),
+            ) {
+                Text(
+                    text = currentSong?.title ?: "Seleccione una canción",
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(fraction = 0.6f),
+                    color = TertiaryColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-        // Botón Play/pause
-        val isPlaying = viewModel.isPlaying.collectAsState().value
-        Button(
-            onClick = {
-                if (isPlaying) {
-                    viewModel.pauseSong()
-                } else {
-                    viewModel.resumeSong()
+                // Botón Play/pause
+                val isPlaying = viewModel.isPlaying.collectAsState().value
+                Button(
+                    onClick = {
+                        if (isPlaying) {
+                            viewModel.pauseSong()
+                        } else {
+                            viewModel.resumeSong()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                    )
+                ) {
+                    Icon(
+                        modifier = Modifier.size(35.dp),
+                        //   modifier = Modifier.padding(4.dp),
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "pausar" else "reanudar"
+                    )
                 }
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent,
-            )
-            // enabled = currentSong != null
-        ) {
-            //Text(if (isPlaying) "Pausar" else "Reanudar")
-            Icon(
-                modifier = Modifier.size(35.dp),
-                //   modifier = Modifier.padding(4.dp),
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "pausar" else "reanudar"
-            )
-        }
-        //  Spacer(modifier = Modifier.width(8.dp)) // Espacio entre botones
 
-        Button(
-            onClick = { viewModel.playNextSong() },
-            enabled = songs.isNotEmpty(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent,
-            )
-        ) {
-            //Text("Siguiente")
-            Icon(
-                modifier = Modifier.size(35.dp),
-                imageVector = Icons.Filled.SkipNext,
-                contentDescription = "siguiente"
-            )
+                // Botón siguiente
+                Button(
+                    onClick = { viewModel.playNextSong() },
+                    enabled = songs.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                    )
+                ) {
+                    Icon(
+                        modifier = Modifier.size(35.dp),
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "siguiente"
+                    )
+                }
+            }
         }
     }
 }
@@ -157,7 +150,6 @@ fun SongItem(song: Song, isSelected: Boolean, onSongClick: () -> Unit) {
         modifier = Modifier
             .clickable { onSongClick() }
             .fillMaxWidth(),
-        // .background(if (isSelected) Color.LightGray else Color.Transparent),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
