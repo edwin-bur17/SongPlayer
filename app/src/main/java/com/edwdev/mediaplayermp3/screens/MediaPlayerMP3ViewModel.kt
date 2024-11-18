@@ -14,15 +14,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class MediaPlayerMP3ViewModel : ViewModel() {
+    // Lista de audios
     private val _songs = MutableLiveData<List<Song>>()
     val songs: LiveData<List<Song>> get() = _songs
 
+    // Estado de la reproducción
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
+
+    // Posición actual del audio
+    private val _currentPosition = MutableStateFlow(0)
+    val currentPosition: StateFlow<Int> = _currentPosition.asStateFlow()
+
+    // Duracción del audio
+    private val _duration = MutableStateFlow(0)
+    val duration: StateFlow<Int> = _duration.asStateFlow()
 
     // MediaPlayer
     var mediaPlayer: MediaPlayer? = null
 
+    // Canción actual
     val currentSong = MutableLiveData<Song?>(null)
 
 
@@ -60,6 +71,21 @@ class MediaPlayerMP3ViewModel : ViewModel() {
         _songs.value = songsList
     }
 
+    // Función para actualizar la posición actual
+    fun updatePosition() {
+        mediaPlayer?.let { player ->
+            if (player.isPlaying) {
+                _currentPosition.value = player.currentPosition
+            }
+        }
+    }
+
+    // Cambiar la posición del audio
+    fun seekTo(position : Int) {
+        mediaPlayer?.seekTo(position)
+        _currentPosition.value = position
+    }
+
     // Reproducir y pausar canciones
     fun playSong(song: Song) {
         mediaPlayer?.stop()
@@ -67,6 +93,8 @@ class MediaPlayerMP3ViewModel : ViewModel() {
         mediaPlayer = MediaPlayer().apply {
             setDataSource(song.uri)
             prepare()
+            _duration.value = duration
+            _currentPosition.value = 0
             // iniciar la siguiente canción de forma automática
             setOnCompletionListener {
                 playNextSong()
