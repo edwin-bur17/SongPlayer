@@ -1,5 +1,6 @@
 package com.edwdev.mediaplayermp3.screens
 
+import android.app.Service
 import android.content.Context
 import android.database.Cursor
 import android.media.MediaPlayer
@@ -9,6 +10,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.edwdev.mediaplayermp3.model.Song
+import com.edwdev.mediaplayermp3.service.MusicServiceConnection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,6 +38,12 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     // Canción actual
     val currentSong = MutableLiveData<Song?>(null)
 
+    var musicServiceConnection: MusicServiceConnection? = null
+
+    fun initializeService(context: Context) {
+        musicServiceConnection = MusicServiceConnection(context)
+        musicServiceConnection?.bind()
+    }
 
     // Cargar canciones desde el dispositivo
     fun loadSongs(context: Context) {
@@ -101,6 +109,13 @@ class MediaPlayerMP3ViewModel : ViewModel() {
             }
             start()
             _isPlaying.value = true
+            // Actualizar notificación
+            musicServiceConnection?.getMusicService()?.updateNotification(
+                song,
+                true,
+                duration,
+                currentPosition
+            )
         }
     }
 
@@ -108,12 +123,30 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     fun pauseSong() {
         mediaPlayer?.pause()
         _isPlaying.value = false
+        // Actualizar la notificación
+        currentSong.value?.let { song ->
+            musicServiceConnection?.getMusicService()?.updateNotification(
+                song,
+                false,
+                duration.value,
+                currentPosition.value
+            )
+        }
     }
 
     // Reanudar
     fun resumeSong() {
         mediaPlayer?.start()
         _isPlaying.value = true
+        // Actualizar la notificación
+        currentSong.value?.let { song ->
+            musicServiceConnection?.getMusicService()?.updateNotification(
+                song,
+                false,
+                duration.value,
+                currentPosition.value
+            )
+        }
     }
 
     // Reproducir el audio anterior
@@ -137,5 +170,6 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         mediaPlayer?.release()
+        musicServiceConnection?.unbind()
     }
 }

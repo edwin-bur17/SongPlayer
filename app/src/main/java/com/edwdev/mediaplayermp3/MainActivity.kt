@@ -17,6 +17,7 @@ import com.edwdev.mediaplayermp3.screens.MediaPlayerMP3Screen
 import com.edwdev.mediaplayermp3.screens.MediaPlayerMP3ViewModel
 import com.edwdev.mediaplayermp3.screens.SongPlayerScreen
 import com.edwdev.mediaplayermp3.screens.SplashScreen
+import com.edwdev.mediaplayermp3.service.MusicServiceConnection
 
 class MainActivity : ComponentActivity() {
     // ViewModel
@@ -28,6 +29,9 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inicializa el servicio de música
+        viewModel.initializeService(this)
 
         // Inicializa el lanzador de permisos
         requestPermissionLauncher =
