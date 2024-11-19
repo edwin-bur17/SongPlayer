@@ -39,27 +39,6 @@ class MusicService : Service() {
 
     private fun initMediaSession() {
         mediaSession = MediaSessionCompat(this, "MusicService")
-        mediaSession.setCallback(object : MediaSessionCompat.Callback() {
-            override fun onPlay() {
-                // Manejar reproducción
-            }
-
-            override fun onPause() {
-                // Manejar pausa
-            }
-
-            override fun onSkipToNext() {
-                // Manejar siguiente
-            }
-
-            override fun onSkipToPrevious() {
-                // Manejar anterior
-            }
-
-            override fun onSeekTo(pos: Long) {
-                // Manejar búsqueda
-            }
-        })
         mediaSession.isActive = true
     }
 
@@ -102,14 +81,14 @@ class MusicService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        //  CORREGIR ESTA PARTE YA QUE INICIALIZA DESDE 0 LA APP LO QUE GENERA UN DESCONTROL EN EL FLUJO DE LA APP
+        //  CORREGIR ESTA PARTE *** contentIntent *** YA QUE INICIALIZA DESDE 0 LA APP LO QUE GENERA UN DESCONTROL EN EL FLUJO DE LA APP
         // Intent para abrir la actividad al tocar la notificación
-        val contentIntent = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+//        val contentIntent = PendingIntent.getActivity(
+//            this,
+//            0,
+//            Intent(this, MainActivity::class.java),
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
 
         // Actualizar metadata
         val metadata = MediaMetadataCompat.Builder()
@@ -118,22 +97,26 @@ class MusicService : Service() {
             .build()
         mediaSession.setMetadata(metadata)
 
+
+        // CUANDO ESTA ACTIVADA ESTA FUNCIÓN *** playbackState *** ME FUNCIONA EL SLIDER EN LA NOTIIFICACIÓN
+        // PERO CUANDO LO COMENTO ME MUESTRA LOS BOTONES DE ANTERIOR, PLAY/PAUSE Y SIGUIENTE PERO NO APARECE EL SLIDER DE PROGRESO
+        // REVISAR ESTA PARTE
         // Actualizar estado de reproducción
-        val playbackState = PlaybackStateCompat.Builder()
-            .setState(
-                if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
-                position.toLong(),
-                1f
-            )
-            .build()
-        mediaSession.setPlaybackState(playbackState)
+//        val playbackState = PlaybackStateCompat.Builder()
+//            .setState(
+//                if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED,
+//                position.toLong(),
+//                1f
+//            )
+//            .build()
+//        mediaSession.setPlaybackState(playbackState)
 
         // Construir notificación
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_music_note)
             .setContentTitle(song.title)
             .setContentText("Reproduciendo")
-            .setContentIntent(contentIntent)
+            //.setContentIntent(contentIntent)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .addAction(R.drawable.ic_previous, "Previous", previousIntent)

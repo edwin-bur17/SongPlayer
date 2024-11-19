@@ -1,5 +1,9 @@
 package com.edwdev.mediaplayermp3
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -17,7 +21,6 @@ import com.edwdev.mediaplayermp3.screens.MediaPlayerMP3Screen
 import com.edwdev.mediaplayermp3.screens.MediaPlayerMP3ViewModel
 import com.edwdev.mediaplayermp3.screens.SongPlayerScreen
 import com.edwdev.mediaplayermp3.screens.SplashScreen
-import com.edwdev.mediaplayermp3.service.MusicServiceConnection
 
 class MainActivity : ComponentActivity() {
     // ViewModel
@@ -26,13 +29,37 @@ class MainActivity : ComponentActivity() {
     // Lanzador de permisos
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
 
+    // Receptor de radiodifusión para controles de notificación
+    private val musicControlReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                "PLAY_PAUSE" -> {
+                    if (viewModel.isPlaying.value) {
+                        viewModel.pauseSong()
+                    } else {
+                        viewModel.resumeSong()
+                    }
+                }
+                "NEXT" -> viewModel.playNextSong()
+                "PREVIOUS" -> viewModel.playPreviousSong()
+            }
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Registrar receptor de emisión para controles de música
+        val filter = IntentFilter().apply {
+            addAction("PLAY_PAUSE")
+            addAction("NEXT")
+            addAction("PREVIOUS")
+        }
+        registerReceiver(musicControlReceiver, filter, RECEIVER_NOT_EXPORTED)
+
         // Inicializa el servicio de música
         viewModel.initializeService(this)
-
         // Inicializa el lanzador de permisos
         requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -69,5 +96,11 @@ class MainActivity : ComponentActivity() {
         } else {
             viewModel.loadSongs(this)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Anular el registro del receptor para evitar fugas de memoria
+        unregisterReceiver(musicControlReceiver)
     }
 }
