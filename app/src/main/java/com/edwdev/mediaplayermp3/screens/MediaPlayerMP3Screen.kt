@@ -93,8 +93,9 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
                     .fillMaxWidth()
                     .background(VariantPrimaryColor),
             ) {
+                val SongTitle = currentSong?.title?.substringBefore(".")
                 Text(
-                    text = currentSong?.title ?: "Seleccione una canción",
+                    text = SongTitle ?: "Seleccione una canción",
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth(fraction = 0.6f),
@@ -146,6 +147,7 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
 
 @Composable
 fun SongItem(song: Song, isSelected: Boolean, onSongClick: () -> Unit) {
+    val SongTitle = song.title.substringBeforeLast(".")
     Row(
         modifier = Modifier
             .clickable { onSongClick() }
@@ -161,7 +163,7 @@ fun SongItem(song: Song, isSelected: Boolean, onSongClick: () -> Unit) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             modifier = Modifier.padding(vertical = 16.dp),
-            text = song.title,
+            text = SongTitle,
             color = if (isSelected) SecondaryColor else WhiteColor,
             fontSize = 18.sp,
             maxLines = 1,

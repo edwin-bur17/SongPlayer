@@ -129,9 +129,10 @@ fun AudioSlider(viewModel: MediaPlayerMP3ViewModel) {
 
 @Composable
 fun SongTitle(currentSong: Song?) {
+    val SongTitle = currentSong?.title?.substringBefore(".")
     Text(
         modifier = Modifier.padding(horizontal = 16.dp),
-        text = currentSong?.title ?: "No hay canción seleccionada",
+        text = SongTitle ?: "No hay canción seleccionada",
         fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,

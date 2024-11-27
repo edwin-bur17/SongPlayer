@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.media)
+   // implementation(libs.androidx.animation)
 
 
     testImplementation(libs.junit)
