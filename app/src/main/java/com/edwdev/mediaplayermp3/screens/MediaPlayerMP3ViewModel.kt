@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.media.MediaPlayer
 import android.net.Uri
 import android.provider.MediaStore
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -92,6 +93,15 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     fun seekTo(position : Int) {
         mediaPlayer?.seekTo(position)
         _currentPosition.value = position
+
+        currentSong.value?.let { song ->
+            musicServiceConnection?.getMusicService()?.updateNotification(
+                song,
+                isPlaying.value,
+                duration.value,
+                position
+            )
+        }
     }
 
     // Reproducir y pausar canciones
@@ -127,7 +137,7 @@ class MediaPlayerMP3ViewModel : ViewModel() {
         currentSong.value?.let { song ->
             musicServiceConnection?.getMusicService()?.updateNotification(
                 song,
-                false,
+                isPlaying.value,
                 duration.value,
                 currentPosition.value
             )
@@ -142,7 +152,7 @@ class MediaPlayerMP3ViewModel : ViewModel() {
         currentSong.value?.let { song ->
             musicServiceConnection?.getMusicService()?.updateNotification(
                 song,
-                false,
+                isPlaying.value,
                 duration.value,
                 currentPosition.value
             )

@@ -13,6 +13,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,6 +43,10 @@ class MainActivity : ComponentActivity() {
                 }
                 "NEXT" -> viewModel.playNextSong()
                 "PREVIOUS" -> viewModel.playPreviousSong()
+                "SEEK_TO" -> {
+                    val position = intent.getIntExtra("position", 0)
+                    viewModel.seekTo(position)
+                }
             }
         }
     }
@@ -55,11 +60,13 @@ class MainActivity : ComponentActivity() {
             addAction("PLAY_PAUSE")
             addAction("NEXT")
             addAction("PREVIOUS")
+            addAction("SEEK_TO")
         }
         registerReceiver(musicControlReceiver, filter, RECEIVER_NOT_EXPORTED)
 
         // Inicializa el servicio de música
         viewModel.initializeService(this)
+
         // Inicializa el lanzador de permisos
         requestPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -85,7 +92,20 @@ class MainActivity : ComponentActivity() {
                     SongPlayerScreen(viewModel)
                 }
             }
+
+            // Manejar la navegación desde la notificación
+            LaunchedEffect(intent) {
+                if (intent.hasExtra("NAVIGATE_TO")) {
+                    when (intent.getStringExtra("NAVIGATE_TO")) {
+                        "songPlayer" -> navController.navigate("songPlayer") {
+                            // Opcional: Limpiar la pila de navegación si es necesario
+                            popUpTo("home") { inclusive = false }
+                        }
+                    }
+                }
+            }
         }
+
         // Verifica si el permiso ya está concedido
         if (ContextCompat.checkSelfPermission(
                 this,
