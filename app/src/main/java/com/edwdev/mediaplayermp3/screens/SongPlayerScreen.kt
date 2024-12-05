@@ -12,15 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
@@ -31,7 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,8 +43,9 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun SongPlayerScreen(viewModel: MediaPlayerMP3ViewModel) {
     val currentSong by viewModel.currentSong.observeAsState()
+    val isRandomMode by viewModel.isRandomMode.collectAsState()
 
-    //
+    // Actualizar la posición del audio en tiempo real
     LaunchedEffect(Unit) {
         while (true) {
             viewModel.updatePosition()
@@ -60,10 +54,7 @@ fun SongPlayerScreen(viewModel: MediaPlayerMP3ViewModel) {
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            // .padding(horizontal = 16.dp)
-            .background(PrimaryColor),
+        modifier = Modifier.fillMaxSize().background(PrimaryColor),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -75,18 +66,20 @@ fun SongPlayerScreen(viewModel: MediaPlayerMP3ViewModel) {
         Spacer(modifier = Modifier.height(8.dp))
         NavigationButtons(
             viewModel = viewModel,
-            currentSong = currentSong
+            currentSong = currentSong,
+            isRandomMode = isRandomMode
         )
     }
 }
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun AudioSlider(viewModel: MediaPlayerMP3ViewModel) {
     val currentPosition by viewModel.currentPosition.collectAsState()
     val duration by viewModel.duration.collectAsState()
 
     Column(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
     ) {
         Slider(
             modifier = Modifier.fillMaxWidth(),
@@ -129,10 +122,10 @@ fun AudioSlider(viewModel: MediaPlayerMP3ViewModel) {
 
 @Composable
 fun SongTitle(currentSong: Song?) {
-    val SongTitle = currentSong?.title?.substringBefore(".")
+    val songTitle = currentSong?.title?.substringBefore(".")
     Text(
         modifier = Modifier.padding(horizontal = 16.dp),
-        text = SongTitle ?: "No hay canción seleccionada",
+        text = songTitle ?: "No hay canción seleccionada",
         fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
@@ -142,30 +135,42 @@ fun SongTitle(currentSong: Song?) {
 }
 
 @Composable
-fun NavigationButtons(viewModel: MediaPlayerMP3ViewModel, currentSong: Song?) {
+fun NavigationButtons(viewModel: MediaPlayerMP3ViewModel, currentSong: Song?, isRandomMode: Boolean) {
     Row(
-        modifier = Modifier.padding(horizontal = 10.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        // Botón anterior
-        Button(
-            onClick = { viewModel.playPreviousSong() },
-            modifier = Modifier.clip(CircleShape),
+        // Botón Reiniciar audio
+        IconButton(
+            onClick = { viewModel.restartCurrentSong() },
             enabled = currentSong != null,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SecondaryColor,
-            )
         ) {
             Icon(
-                modifier = Modifier.padding(4.dp),
-                imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "anterior"
+                modifier = Modifier.size(55.dp),
+                painter = painterResource(R.drawable.ic_replay),
+                contentDescription = "replay",
+                tint = SecondaryColor
+            )
+        }
+
+        // Botón anterior
+        IconButton(
+            onClick = { viewModel.playPreviousSong() },
+            enabled = currentSong != null,
+        ) {
+            Icon(
+                modifier = Modifier.size(55.dp),
+                painter = painterResource(R.drawable.ic_previous),
+                contentDescription = "previous",
+                tint = SecondaryColor
             )
         }
 
         // Botón Play/Pause
         val isPlaying = viewModel.isPlaying.collectAsState().value
-        Button(
+        IconButton(
             onClick = {
                 if (isPlaying) {
                     viewModel.pauseSong()
@@ -174,31 +179,38 @@ fun NavigationButtons(viewModel: MediaPlayerMP3ViewModel, currentSong: Song?) {
                 }
             },
             enabled = currentSong != null,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SecondaryColor,
-            )
         ) {
             Icon(
-                modifier = Modifier.padding(4.dp),
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reanudar"
+                modifier = Modifier.size(55.dp),
+                painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                contentDescription = if (isPlaying) "pause" else "play",
+                tint = SecondaryColor
             )
         }
 
         // Botón siguiente
-        Button(
+        IconButton(
             onClick = { viewModel.playNextSong() },
-            modifier = Modifier.clip(CircleShape),
             enabled = currentSong != null,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SecondaryColor,
-            )
-
         ) {
             Icon(
-                modifier = Modifier.padding(4.dp),
-                imageVector = Icons.Filled.SkipNext,
-                contentDescription = "siguiente"
+                modifier = Modifier.size(55.dp),
+                painter = painterResource(R.drawable.ic_next),
+                contentDescription = "next",
+                tint = SecondaryColor
+            )
+        }
+
+        // Modo aleatorio
+        IconButton(
+            onClick = { viewModel.toggleRandomMode() },
+            enabled = true,
+        ) {
+            Icon(
+                modifier = Modifier.size(55.dp),
+                painter = painterResource(R.drawable.ic_random),
+                contentDescription = "ramdom_mode",
+                tint = if (isRandomMode) SecondaryColor else Color.Gray
             )
         }
     }
@@ -208,7 +220,7 @@ fun NavigationButtons(viewModel: MediaPlayerMP3ViewModel, currentSong: Song?) {
 fun HeaderImage() {
     Image(
         painter = painterResource(id = R.drawable.icono),
-        contentDescription = "sound-icon",
-        modifier = Modifier.size(500.dp)
+        contentDescription = "sound_icon",
+        modifier = Modifier.size(400.dp)
     )
 }

@@ -2,6 +2,7 @@ package com.edwdev.mediaplayermp3.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,15 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -43,21 +38,38 @@ import com.edwdev.mediaplayermp3.ui.theme.SecondaryColor
 import com.edwdev.mediaplayermp3.ui.theme.TertiaryColor
 import com.edwdev.mediaplayermp3.ui.theme.VariantPrimaryColor
 import com.edwdev.mediaplayermp3.ui.theme.WhiteColor
+import androidx.compose.ui.res.painterResource
+import com.edwdev.mediaplayermp3.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavHostController) {
     val songs by viewModel.songs.observeAsState(emptyList())
     val currentSong by viewModel.currentSong.observeAsState()
+    val isRandomMode by viewModel.isRandomMode.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Song Player") },
+                title = {
+                    Column {
+                        Text(text = "Song Player", color = WhiteColor)
+                        Text(text = "${songs.size} canciones", color = WhiteColor, fontSize = 14.sp)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = VariantPrimaryColor,
-                    titleContentColor = WhiteColor
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.toggleRandomMode() }) {
+                        Icon(
+                            modifier = Modifier.size(35.dp),
+                            painter = painterResource(R.drawable.ic_random),
+                            contentDescription = "Random mode",
+                            tint = if (isRandomMode) TertiaryColor else Color.LightGray
+                        )
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -88,17 +100,16 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
 
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 1.dp)
+                    .padding(horizontal = 16.dp, vertical = 0.dp)
                     .height(55.dp)
                     .fillMaxWidth()
                     .background(VariantPrimaryColor),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val SongTitle = currentSong?.title?.substringBefore(".")
+                val songTitle = currentSong?.title?.substringBefore(".")
                 Text(
-                    text = SongTitle ?: "Seleccione una canción",
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(fraction = 0.6f),
+                    text = songTitle ?: "Seleccione una canción",
+                    modifier = Modifier.padding(vertical = 16.dp, horizontal = 0.dp).weight(0.85f),
                     color = TertiaryColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -106,7 +117,8 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
 
                 // Botón Play/pause
                 val isPlaying = viewModel.isPlaying.collectAsState().value
-                Button(
+
+                IconButton(
                     onClick = {
                         if (isPlaying) {
                             viewModel.pauseSong()
@@ -114,30 +126,25 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
                             viewModel.resumeSong()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                    )
                 ) {
                     Icon(
                         modifier = Modifier.size(35.dp),
-                        //   modifier = Modifier.padding(4.dp),
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "pausar" else "reanudar"
+                        painter = painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
+                        contentDescription = if (isPlaying) "pausar" else "reanudar",
+                        tint = Color.White
                     )
                 }
 
                 // Botón siguiente
-                Button(
+                IconButton(
                     onClick = { viewModel.playNextSong() },
                     enabled = songs.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                    )
                 ) {
                     Icon(
                         modifier = Modifier.size(35.dp),
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "siguiente"
+                        painter = painterResource(R.drawable.ic_next),
+                        contentDescription = "siguiente",
+                        tint = Color.White
                     )
                 }
             }
@@ -147,15 +154,13 @@ fun MediaPlayerMP3Screen(viewModel: MediaPlayerMP3ViewModel, navController: NavH
 
 @Composable
 fun SongItem(song: Song, isSelected: Boolean, onSongClick: () -> Unit) {
-    val SongTitle = song.title.substringBeforeLast(".")
+    val songTitle = song.title.substringBeforeLast(".")
     Row(
-        modifier = Modifier
-            .clickable { onSongClick() }
-            .fillMaxWidth(),
+        modifier = Modifier.clickable { onSongClick() }.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Filled.MusicNote,
+            painter = painterResource(R.drawable.ic_music_note),
             contentDescription = "Song Icon",
             tint = if (isSelected) TertiaryColor else Color.LightGray,
             modifier = Modifier.size(30.dp)
@@ -163,8 +168,8 @@ fun SongItem(song: Song, isSelected: Boolean, onSongClick: () -> Unit) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             modifier = Modifier.padding(vertical = 16.dp),
-            text = SongTitle,
-            color = if (isSelected) SecondaryColor else WhiteColor,
+            text = songTitle,
+            color = if (isSelected) SecondaryColor else Color.LightGray,
             fontSize = 18.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

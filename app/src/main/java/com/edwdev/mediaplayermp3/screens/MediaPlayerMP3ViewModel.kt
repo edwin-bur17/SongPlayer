@@ -1,12 +1,10 @@
 package com.edwdev.mediaplayermp3.screens
 
-import android.app.Service
 import android.content.Context
 import android.database.Cursor
 import android.media.MediaPlayer
 import android.net.Uri
 import android.provider.MediaStore
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -20,6 +18,10 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     // Lista de audios
     private val _songs = MutableLiveData<List<Song>>()
     val songs: LiveData<List<Song>> get() = _songs
+
+    // Estado para el modo de reproducción aleatorio
+    private val _isRandomMode = MutableStateFlow(true)
+    val isRandomMode: StateFlow<Boolean> = _isRandomMode.asStateFlow()
 
     // Estado de la reproducción
     private val _isPlaying = MutableStateFlow(false)
@@ -39,7 +41,7 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     // Canción actual
     val currentSong = MutableLiveData<Song?>(null)
 
-    var musicServiceConnection: MusicServiceConnection? = null
+    private var musicServiceConnection: MusicServiceConnection? = null
 
     fun initializeService(context: Context) {
         musicServiceConnection = MusicServiceConnection(context)
@@ -70,7 +72,11 @@ class MediaPlayerMP3ViewModel : ViewModel() {
                 val songName = it.getString(nameColumn)
                 val songUri = it.getString(dataColumn)
                 // solo agregar audios mp3 excluyendo audios tipo ringtone y los de whatsapp
-                if (songUri.endsWith(".mp3", ignoreCase = true) && !songName.startsWith("AUD", ignoreCase = true) && !songName.startsWith("tone")) {
+                if (songUri.endsWith(".mp3", ignoreCase = true) && !songName.startsWith(
+                        "AUD",
+                        ignoreCase = true
+                    ) && !songName.startsWith("tone")
+                ) {
                     songsList.add(Song(title = songName, uri = songUri))
                 }
             }
@@ -90,7 +96,7 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     }
 
     // Cambiar la posición del audio
-    fun seekTo(position : Int) {
+    fun seekTo(position: Int) {
         mediaPlayer?.seekTo(position)
         _currentPosition.value = position
 
@@ -162,18 +168,70 @@ class MediaPlayerMP3ViewModel : ViewModel() {
     // Reproducir el audio anterior
     fun playPreviousSong() {
         val currentSongIndex = songs.value?.indexOf(currentSong.value) ?: -1
-        if (currentSongIndex > 0) {
-            currentSong.value = songs.value?.get(currentSongIndex - 1)
-            currentSong.value?.let { playSong(it) }
+        val previousIndex = if (isRandomMode.value) {
+            // Generar un índice aleatorio diferente de la canción actual
+            var randomIndex: Int
+            do {
+                randomIndex = (0 until (songs.value?.size ?: 1)).random()
+            } while (randomIndex == currentSongIndex)
+            randomIndex
+        } else { // Modo de reproducción secuencial
+            if (currentSongIndex > 0) currentSongIndex - 1
+            else (songs.value?.size ?: 1) - 1
         }
+        currentSong.value = songs.value?.get(previousIndex)
+        currentSong.value?.let { playSong(it) }
     }
 
     // Reproducir el audio siguiente
     fun playNextSong() {
         val currentSongIndex = songs.value?.indexOf(currentSong.value) ?: -1
-        val nextIndex = (currentSongIndex + 1) % (songs.value?.size ?: 1)
+        val nextIndex = if (isRandomMode.value) {
+            // Generar un índice aleatorio diferente de la canción actual
+            var randomIndex: Int
+            do {
+                randomIndex = (0 until (songs.value?.size ?: 1)).random()
+            } while (randomIndex == currentSongIndex)
+            randomIndex
+        } else {// Modo de reproducción secuencial
+            (currentSongIndex + 1) % (songs.value?.size ?: 1)
+        }
         currentSong.value = songs.value?.get(nextIndex)
         playSong(currentSong.value!!)
+    }
+
+    // Función para reiniciar el audio actual
+    fun restartCurrentSong() {
+        // Verificar si hay una canción actual reproduciendo
+        currentSong.value?.let { song ->
+            // Reiniciar desde el principio
+            mediaPlayer?.let { player ->
+                player.seekTo(0)
+                _currentPosition.value = 0
+
+                // Si no estaba reproduciendo, iniciar la reproducción
+                if (!isPlaying.value) {
+                    player.start()
+                    _isPlaying.value = true
+                }
+
+                // Actualizar la notificación
+                musicServiceConnection?.getMusicService()?.updateNotification(
+                    song,
+                    isPlaying.value,
+                    duration.value,
+                    0
+                )
+            } ?: run {
+                // Si no hay MediaPlayer, reproduce la canción desde el inicio
+                playSong(song)
+            }
+        }
+    }
+
+    // Método para alternar el modo aleatorio
+    fun toggleRandomMode() {
+        _isRandomMode.value = !_isRandomMode.value
     }
 
     // Limpiar recursos al eliminar el ViewModel
